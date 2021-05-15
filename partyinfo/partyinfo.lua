@@ -93,7 +93,7 @@ ashita.register_event('render', function()
             imgui.Text('TP:');
             imgui.SameLine();
             imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
-            imgui.ProgressBar(tp / 3000, -1, 14, tostring(pettp));
+            imgui.ProgressBar(tp / 3000, -1, 14, tostring(tp));
             imgui.PopStyleColor(2);
         end
     end
