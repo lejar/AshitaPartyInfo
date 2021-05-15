@@ -1,7 +1,7 @@
 # AshitaPartyInfo
 A plugin for ashita, which adds a movable party window.
 
-![alt text](https://github.com/lejar/AshitaPartyInfo/blob/master/partyinfo.PNG?raw=true)
+![alt text](https://raw.githubusercontent.com/lejar/AshitaPartyInfo/main/partyinfo.PNG)
 
 # Installation
 Copy the partyinfo folder into "C:\Program Files (x86)\PlayOnline\Ashita\addons".
