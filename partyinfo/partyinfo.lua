@@ -30,6 +30,12 @@ _addon.version  = '1.0.0';
 require 'common'
 
 
+-- Because HP and MP can have a different number of digits between all players,
+-- we save the length of the longest HP/MP so that all party members have the
+-- same padding for the numbers.
+local last_longest_number = 0;
+
+
 ----------------------------------------------------------------------------------------------------
 -- func: load
 -- desc: Event called when the addon is being loaded.
@@ -48,7 +54,7 @@ ashita.register_event('render', function()
 
     -- Locate the players zone.
     local zone = party:GetMemberZone(0);
-    
+
     local target = GetEntity(AshitaCore:GetDataManager():GetTarget():GetTargetIndex());
 
     -- Initialize the window draw.
@@ -56,14 +62,23 @@ ashita.register_event('render', function()
         imgui.End();
         return;
     end
-    
+
+    local longest_number = 0;
     for x = 0, 5 do
-        if not (x ~= 0 and zone ~= party:GetMemberZone(x) or party:GetMemberActive(x) == 0) then
+        if not (x ~= 0 and party:GetMemberActive(x) == 0) then
             local name = party:GetMemberName(x);
+            local hp = party:GetMemberCurrentHP(x);
             local hpp = party:GetMemberCurrentHPP(x);
+            local mp = party:GetMemberCurrentMP(x);
             local mpp = party:GetMemberCurrentMPP(x);
             local tp = party:GetMemberCurrentTP(x);
-            
+
+            -- Save the longest number of all hp an mp so that we can correctly pad the numbers
+            -- for the whole group.
+            longest_number = math.max(longest_number, string.len(string.format('%d', hp)));
+            longest_number = math.max(longest_number, string.len(string.format('%d', mp)));
+
+            imgui.Separator();
             -- If the current party member is selected, make it visible.
             if (target ~= nil and string.lower(target.Name) == string.lower(name)) then
                 imgui.PushStyleColor(ImGuiCol_Text, 0.5, 1.0, 0.5, 1.0);
@@ -73,30 +88,69 @@ ashita.register_event('render', function()
                 imgui.Text(name);
             end
             imgui.Separator();
-        
+
             -- Draw the labels and progress bars.
             imgui.PushStyleColor(ImGuiCol_PlotHistogram, 1.0, 0.61, 0.61, 0.6);
-            imgui.Text('HP:');
+            imgui.Text('  HP:');
             imgui.SameLine();
-            imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
-            imgui.ProgressBar(hpp / 100, -1, 14);
-            imgui.PopStyleColor(2);
-            
+
+            if zone == party:GetMemberZone(x) then
+                -- Color the hp amount.
+                if hpp > 75 then -- While
+                    imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
+                elseif hpp > 50 then -- Yellow
+                    imgui.PushStyleColor(ImGuiCol_Text, 0.98, 1.00, 0.38, 1.0);
+                elseif hpp > 25 then -- Orange
+                    imgui.PushStyleColor(ImGuiCol_Text, 1.00, 0.63, 0.38, 1.0);
+                else -- Red
+                    imgui.PushStyleColor(ImGuiCol_Text, 1.00, 0.38, 0.38, 1.0);
+                end
+                -- Pad the HP on the left.
+                local hp_amount = string.format('%d', hp)
+                while string.len(hp_amount) < last_longest_number do
+                    hp_amount = ' ' .. hp_amount;
+                end
+                imgui.Text(hp_amount);
+                imgui.SameLine();
+                imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
+                imgui.ProgressBar(hpp / 100, -1, 14);
+                imgui.PopStyleColor(3);
+            else
+                imgui.Text('N/A');
+            end
+
             imgui.PushStyleColor(ImGuiCol_PlotHistogram, 0.0, 0.61, 0.61, 0.6);
-            imgui.Text('MP:');
+            imgui.Text('  MP:');
             imgui.SameLine();
-            imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
-            imgui.ProgressBar(mpp / 100, -1, 14);
-            imgui.PopStyleColor(2);
-            
+            if zone == party:GetMemberZone(x) then
+                -- Pad the MP on the left.
+                local mp_amount = string.format('%d', mp)
+                while string.len(mp_amount) < last_longest_number do
+                    mp_amount = ' ' .. mp_amount;
+                end
+                imgui.Text(mp_amount);
+                imgui.SameLine();
+                imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
+                imgui.ProgressBar(mpp / 100, -1, 14);
+                imgui.PopStyleColor(2);
+            else
+                imgui.Text('N/A');
+            end
+
             imgui.PushStyleColor(ImGuiCol_PlotHistogram, 0.4, 1.0, 0.4, 0.6);
-            imgui.Text('TP:');
+            imgui.Text('  TP:');
             imgui.SameLine();
-            imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
-            imgui.ProgressBar(tp / 3000, -1, 14, tostring(tp));
-            imgui.PopStyleColor(2);
+            if zone == party:GetMemberZone(x) then
+                imgui.PushStyleColor(ImGuiCol_Text, 1.0, 1.0, 1.0, 1.0);
+                imgui.ProgressBar(tp / 3000, -1, 14, tostring(tp));
+                imgui.PopStyleColor(2);
+            else
+                imgui.Text('N/A');
+            end
         end
     end
-    
+
+    last_longest_number = longest_number;
+
     imgui.End();
 end);
